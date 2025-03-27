@@ -36,5 +36,5 @@ def consultation(request):
     return render(request, 'consultation.html')
 
 
-def signup_consultation(request):
-    return render(request, 'consultation.html')
+def card(request):
+    return render(request, 'card.html')
