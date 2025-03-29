@@ -168,23 +168,27 @@ class Delivery(models.Model):
 
 
 class Consult(models.Model):
-    buyer_name = models.ForeignKey(Buyer, on_delete=models.CASCADE,
-        verbose_name='имя покупателя',
-        related_name='buyer_name_consults')
-    
-    buyer_phone = models.ForeignKey(Buyer, on_delete=models.CASCADE,
-        verbose_name='телефон покупателя',
-        related_name='buyer_phone_consults', null=True)
+    '''Консультация'''
+    name = models.CharField(max_length=50,
+                                unique=True,
+                                blank=True,
+                                null=True,
+                                verbose_name="Имя клиента")
 
-    consult_time = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Дата и время консультации")
-    
-    is_finished = models.BooleanField(
-        default=False,
-        verbose_name="Выполнена ли консультация"
+    phone_number = models.CharField(max_length=12,
+                                    blank=True,
+                                    null=True,
+                                    verbose_name="Номер телефона клиента")
+
+    is_finished = models.BooleanField(default=False,
+                                      blank=True,
+                                      null=True,
+                                      verbose_name="Выполнена ли консультация"
     )
 
     class Meta:
         verbose_name = "Консультация"
         verbose_name_plural = "Консультации"
+
+    def __str__(self):
+        return str(self.name)
