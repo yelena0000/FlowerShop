@@ -142,21 +142,24 @@ class BouquetFlower(models.Model):
 
 
 class Delivery(models.Model):
-    buyer_name = models.ForeignKey(Buyer, on_delete=models.CASCADE,
-        verbose_name='имя покупателя',
-        related_name='buyer_name_deliveries')
-    
-    buyer_phone = models.ForeignKey(Buyer, on_delete=models.CASCADE,
-        verbose_name='телефон покупателя',
-        related_name='buyer_phone_deliveries', null=True)
+    buyer_name = models.CharField(max_length=50,
+                                  blank=True,
+                                  null=True,
+                                  verbose_name="Имя клиента")
+
+    buyer_number = models.CharField(max_length=12,
+                                    blank=True,
+                                    null=True,
+                                    verbose_name="Номер телефона клиента")
     
     address = models.CharField(verbose_name="адрес",
                                max_length=200,
                                blank=True)
     
-    delivery_time = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Дата и время доставки")
+    delivery_time = models.CharField(max_length=200,
+                                     blank=True,
+                                     null=True,
+                                     verbose_name="Дата и время доставки")
     
     #flowers = models.ManyToManyField(Flowers)
 
@@ -164,7 +167,7 @@ class Delivery(models.Model):
         default=False,
         verbose_name="Выполнена ли доставка"
     )
-
+    # оплачена ли доставка (?)
     class Meta:
         verbose_name = "Доставка"
         verbose_name_plural = "Доставки"
