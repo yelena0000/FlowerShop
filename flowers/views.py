@@ -36,18 +36,18 @@ def order_step(request):
 
 def consultation(request):
     if request.method == 'POST':
-        buyer_name = request.POST.get('fname')
-        buyer_phone = request.POST.get('tel')
+        name = request.POST.get('fname')
+        phone = request.POST.get('tel')
 
-        if not buyer_name or not buyer_phone:
+        if not name or not phone:
             messages.error(request, 'Пожалуйста, заполните все поля.')
             return render(request, 'consultation.html')
 
-        buyer = Buyer.objects.create(
-            buyer_name=buyer_name,
-            buyer_phone=buyer_phone
+        Consult.objects.create(
+            name=name,
+            phone_number=phone
         )
-        Consult.objects.create(buyer_name=buyer)
+        messages.success(request, 'Заявка на консультацию успешно отправлена!')
         return redirect('consultation')
 
     return render(request, 'consultation.html')
