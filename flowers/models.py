@@ -1,4 +1,7 @@
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from flowers.telegram_bot import send_consultation_notification
 
 
 class Reason(models.Model):
@@ -194,6 +197,12 @@ class Consult(models.Model):
     class Meta:
         verbose_name = "Консультация"
         verbose_name_plural = "Консультации"
-
+        
     def __str__(self):
         return str(self.name)
+      
+
+@receiver(post_save, sender=Consult)
+def consult_created(sender, instance, created, **kwargs):
+    if created:
+         send_consultation_notification(instance.id)
