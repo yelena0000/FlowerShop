@@ -1,4 +1,7 @@
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from flowers.telegram_bot import send_consultation_notification
 
 
 class Reason(models.Model):
@@ -145,21 +148,24 @@ class BouquetFlower(models.Model):
 
 
 class Delivery(models.Model):
-    buyer_name = models.ForeignKey(Buyer, on_delete=models.CASCADE,
-        verbose_name='имя покупателя',
-        related_name='buyer_name_deliveries')
-    
-    buyer_phone = models.ForeignKey(Buyer, on_delete=models.CASCADE,
-        verbose_name='телефон покупателя',
-        related_name='buyer_phone_deliveries', null=True)
+    buyer_name = models.CharField(max_length=50,
+                                  blank=True,
+                                  null=True,
+                                  verbose_name="Имя клиента")
+
+    buyer_number = models.CharField(max_length=12,
+                                    blank=True,
+                                    null=True,
+                                    verbose_name="Номер телефона клиента")
     
     address = models.CharField(verbose_name="адрес",
                                max_length=200,
                                blank=True)
     
-    delivery_time = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Дата и время доставки")
+    delivery_time = models.CharField(max_length=200,
+                                     blank=True,
+                                     null=True,
+                                     verbose_name="Дата и время доставки")
     
     #flowers = models.ManyToManyField(Flowers)
 
@@ -167,30 +173,44 @@ class Delivery(models.Model):
         default=False,
         verbose_name="Выполнена ли доставка"
     )
-
+    # оплачена ли доставка (?)
     class Meta:
         verbose_name = "Доставка"
         verbose_name_plural = "Доставки"
 
 
 class Consult(models.Model):
-    buyer_name = models.ForeignKey(Buyer, on_delete=models.CASCADE,
-        verbose_name='имя покупателя',
-        related_name='buyer_name_consults')
-    
-    buyer_phone = models.ForeignKey(Buyer, on_delete=models.CASCADE,
-        verbose_name='телефон покупателя',
-        related_name='buyer_phone_consults', null=True)
+    '''Консультация'''
+    name = models.CharField(max_length=50,
+                                blank=True,
+                                null=True,
+                                verbose_name="Имя клиента")
 
-    consult_time = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Дата и время консультации")
-    
-    is_finished = models.BooleanField(
-        default=False,
-        verbose_name="Выполнена ли консультация"
-    )
+    phone_number = models.CharField(max_length=12,
+                                    blank=True,
+                                    null=True,
+                                    verbose_name="Номер телефона клиента")
+
+    is_finished = models.BooleanField(default=False,
+                                      blank=True,
+                                      null=True,
+                                      verbose_name="Выполнена ли консультация")
+
+    consult_time = models.DateTimeField(auto_now_add=True,
+                                        blank=True,
+                                        null=True,
+                                        verbose_name="Дата и время запроса консультации")
+
 
     class Meta:
         verbose_name = "Консультация"
         verbose_name_plural = "Консультации"
+        
+    def __str__(self):
+        return str(self.name)
+      
+
+@receiver(post_save, sender=Consult)
+def consult_created(sender, instance, created, **kwargs):
+    if created:
+         send_consultation_notification(instance.id)

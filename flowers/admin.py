@@ -14,7 +14,7 @@ class DeliveryAdmin(admin.ModelAdmin):
 
 @admin.register(Consult)
 class ConsultAdmin(admin.ModelAdmin):
-    list_display = ('buyer_name', 'buyer_phone', 'is_finished')
+    list_display = ('name', 'phone_number', 'is_finished')
 
 
 class BouquetFlowerInline(admin.TabularInline):

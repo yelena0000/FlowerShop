@@ -1,6 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.shortcuts import get_object_or_404
-from flowers.models import Bouquet, Shop, BouquetFlower, Flower
+from flowers.models import Bouquet, Shop, BouquetFlower, Buyer, Consult
+from django.contrib import messages
 
 
 def serialize_bouquet(bouquet):
@@ -54,6 +55,21 @@ def order_step(request):
 
 
 def consultation(request):
+    if request.method == 'POST':
+        name = request.POST.get('fname')
+        phone = request.POST.get('tel')
+
+        if not name or not phone:
+            messages.error(request, 'Пожалуйста, заполните все поля.')
+            return render(request, 'consultation.html')
+
+        Consult.objects.create(
+            name=name,
+            phone_number=phone
+        )
+        messages.success(request, 'Заявка на консультацию успешно отправлена!')
+        return redirect('success_consult')
+
     return render(request, 'consultation.html')
 
 
@@ -78,3 +94,22 @@ def card(request, slug):
         'bouquet': serialized_bouquet
     }
     return render(request, 'card.html', context)
+
+
+def success_consult(request):
+    if request.method == 'POST':
+        name = request.POST.get('fname')
+        phone = request.POST.get('tel')
+
+        if not name or not phone:
+            messages.error(request, 'Пожалуйста, заполните все поля.')
+            return render(request, 'consultation.html')
+
+        Consult.objects.create(
+            name=name,
+            phone_number=phone
+        )
+        messages.success(request, 'Заявка на консультацию успешно отправлена!')
+        return redirect('success_consult')
+
+    return render(request, 'success_consult.html')
