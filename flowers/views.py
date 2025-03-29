@@ -48,10 +48,28 @@ def consultation(request):
             phone_number=phone
         )
         messages.success(request, 'Заявка на консультацию успешно отправлена!')
-        return redirect('consultation')
+        return redirect('success_consult')
 
     return render(request, 'consultation.html')
 
 
 def card(request):
     return render(request, 'card.html')
+
+def success_consult(request):
+    if request.method == 'POST':
+        name = request.POST.get('fname')
+        phone = request.POST.get('tel')
+
+        if not name or not phone:
+            messages.error(request, 'Пожалуйста, заполните все поля.')
+            return render(request, 'consultation.html')
+
+        Consult.objects.create(
+            name=name,
+            phone_number=phone
+        )
+        messages.success(request, 'Заявка на консультацию успешно отправлена!')
+        return redirect('success_consult')
+
+    return render(request, 'success_consult.html')
