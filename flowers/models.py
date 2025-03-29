@@ -173,7 +173,6 @@ class Delivery(models.Model):
 class Consult(models.Model):
     '''Консультация'''
     name = models.CharField(max_length=50,
-                                unique=True,
                                 blank=True,
                                 null=True,
                                 verbose_name="Имя клиента")

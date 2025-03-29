@@ -2,8 +2,6 @@ import os
 from telegram import Bot
 from environs import Env
 
-from django.conf import settings
-
 
 env = Env()
 env.read_env()
@@ -15,7 +13,6 @@ TG_CHAT_ID = env.str("TG_CHAT_ID")
 def send_consultation_notification(consult_id):
     from flowers.models import Consult
     consult = Consult.objects.get(id=consult_id)
-    buyer = consult.buyer_name
 
     message = (
         "📞 Новая заявка на консультацию! 📞\n"
@@ -23,10 +20,12 @@ def send_consultation_notification(consult_id):
         "👤 *Клиент:* {name}\n"
         "📱 *Телефон:* {phone}\n"
         "🕒 *Время заявки:* {time}\n"
+        "✅ *Статус:* {status}\n"
     ).format(
-        name=buyer.buyer_name,
-        phone=buyer.buyer_phone,
-        time=consult.consult_time.strftime('%d.%m.%Y в %H:%M')
+        name=consult.name if consult.name else "Не указано",
+        phone=consult.phone_number if consult.phone_number else "Не указан",
+        time=consult.consult_time.strftime('%d.%m.%Y в %H:%M'),
+        status="Завершена" if consult.is_finished else "Ожидает"
     )
 
     bot = Bot(token=TG_BOT_TOKEN)
