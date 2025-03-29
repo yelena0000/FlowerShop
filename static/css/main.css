@@ -26,6 +26,45 @@ input::placeholder {
 	color: rgba(0, 0, 0, .3);
 }
 
+.img-wrap {
+	position: relative;
+	display: flex;
+  }
+  
+  .description h1 {
+	position: static;
+	width: 100%;
+	font-size: 120%;
+	font-weight: lighter;
+	color: black;
+	margin: 10px;
+	margin-left: 15px;
+  }
+
+  .description h2 {
+	position: static;
+	width: 100%;
+	font-size: 120%;
+	font-weight: lighter;
+	color: black;
+	margin: 10px;
+	margin-right: 15px;
+	display: flex;
+	justify-content: right;
+  }
+
+.description {
+	position: absolute;
+	bottom: 0;
+	display: flex;
+	flex-direction: row;
+	width:100%
+}
+
+.distance {
+	flex-grow: 100;
+}
+
 
 .container {
 	max-width: 1215px;

@@ -33,7 +33,7 @@ class Shop(models.Model):
     phone_number = models.CharField(max_length=12,
                                     blank=True,
                                     null=True,
-                                    verbose_name='номер телефона клиента')
+                                    verbose_name='номер телефона')
     photo = models.ImageField(blank=True,
                               null=True,
                               verbose_name='Фото')
@@ -68,6 +68,8 @@ class Bouquet(models.Model):
                              blank=True,
                              null=True,
                              verbose_name='Название букета')
+    
+    slug = models.SlugField("Название в виде url", max_length=200, default='')
     description = models.TextField(blank=True,
                                    null=True,
                                    verbose_name='Описание букета')
@@ -78,13 +80,17 @@ class Bouquet(models.Model):
     flowers = models.ManyToManyField(Flower,
                                      through="BouquetFlower",
                                      blank=True,
-                                     verbose_name='Цветы')
+                                     verbose_name='Цветы',)
     price = models.IntegerField(blank=True,
                                 null=True,
                                 verbose_name='Цена букета')
     photo = models.ImageField(blank=True,
                               null=True,
                               verbose_name='Фото')
+    width = models.IntegerField(null=True, verbose_name='Ширина')
+    height = models.IntegerField(null=True, verbose_name='Высота')
+    
+    is_recommended = models.BooleanField('Входит ли в рекомендации', db_index=False, default=False)
 
     class Meta:
         verbose_name = 'Букет'

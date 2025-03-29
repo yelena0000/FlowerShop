@@ -14,5 +14,5 @@ urlpatterns = [
     path('order/', views.order, name='order'),
     path('order-step/', views.order_step, name='order_step'),
     path('consultation/', views.consultation, name='consultation'),
-    path('card/', views.card, name='card'),
+    path('card/<slug:slug>', views.card, name='card'),
 ]

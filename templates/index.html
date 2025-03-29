@@ -44,24 +44,20 @@
 			<div class="recommended p100">
 				<div class="title">Рекомендуем</div>
 				<div class="recommended__elems ficb">
-					<a href="{% url 'card' %}" class="recommended__block recommended__block_first">
-						<div class="recommended__block_elems ficb">
-							<span class="recommended__block_intro">Летнее утро</span>
-							<span class="recommended__block_price">3 600 руб</span>
-						</div>
-					</a>
-					<a href="{% url 'card' %}" class="recommended__block recommended__block_sec">
-						<div class="recommended__block_elems ficb">
-							<span class="recommended__block_intro">Зимняя сказка</span>
-							<span class="recommended__block_price">4 100 руб</span>
-						</div>
-					</a>
-					<a href="{% url 'card' %}" class="recommended__block recommended__block_thr">
-						<div class="recommended__block_elems ficb">
-							<span class="recommended__block_intro">Нежный</span>
-							<span class="recommended__block_price">2 900 руб</span>
-						</div>
-					</a>
+					{% for bouquet in recommended_bouquets %}
+					  <a href="{% url 'card' slug=bouquet.slug %}">
+						<div class="container-fluid">
+							<div class="row">	
+							  <div class="img-wrap">		
+							  	  <img src="/static/img/{{bouquet.photo}}" alt="">
+							  	  <div class="description">
+							        <h1>{{bouquet.title}}</h1><div class="distance"></div><h2>{{bouquet.price}} руб.</h2>
+							      </div>
+						      </div>
+						  </div>	  		
+						</div>					  
+					  </a>
+					{% endfor %}
 				</div>
 				<button class="btn recommended__btn" onclick="window.location.href='{% url 'catalog' %}'">Показать всю коллекцию</button>
 			</div>
@@ -73,18 +69,12 @@
 				<div class="title">Как нас найти</div>
 				<div class="contacts__elems ficb">
 					<div class="contacts__block">
-						<div class="contacts__block_item ficc">
-							<div class="contacts__block_intro">ул. Пушкинская, 69</div>
-							<a href="tel:89111744460" class="contacts__block_tel">8 (911) 17 44 460</a>
-						</div>
-						<div class="contacts__block_item ficc">
-							<div class="contacts__block_intro">ул. Жукова, 13</div>
-							<a href="tel:89112855571" class="contacts__block_tel">8 (911) 28 55 571</a>
-						</div>
-						<div class="contacts__block_item ficc">
-							<div class="contacts__block_intro">ул. Красная, 384</div>
-							<a href="tel:89113966682" class="contacts__block_tel">8 (911) 39 66 682</a>
-						</div>
+						{% for shop in shops %}
+						  <div class="contacts__block_item ficc">
+						  	<div class="contacts__block_intro">{{shop.address}}</div>
+						  	<a href="tel:89111744460" class="contacts__block_tel">{{shop.phone_number}}</a>
+						  </div>
+						{% endfor %}
 					</div>
 					<img src="{% static 'img/contactsImg.jpg' %}" alt="contactsImg" class="contacts__img">
 					<div class="contacts__map">
