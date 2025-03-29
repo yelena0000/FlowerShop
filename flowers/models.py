@@ -183,8 +183,13 @@ class Consult(models.Model):
     is_finished = models.BooleanField(default=False,
                                       blank=True,
                                       null=True,
-                                      verbose_name="Выполнена ли консультация"
-    )
+                                      verbose_name="Выполнена ли консультация")
+
+    consult_time = models.DateTimeField(auto_now_add=True,
+                                        blank=True,
+                                        null=True,
+                                        verbose_name="Дата и время запроса консультации")
+
 
     class Meta:
         verbose_name = "Консультация"
