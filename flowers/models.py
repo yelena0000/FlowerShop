@@ -167,12 +167,15 @@ class Delivery(models.Model):
                                      verbose_name="Дата и время доставки")
     
     #flowers = models.ManyToManyField(Flowers)
+    is_payed = models.BooleanField(
+        default=False,
+        verbose_name="Оплачена ли доставка"
+    )
 
     is_finished = models.BooleanField(
         default=False,
         verbose_name="Выполнена ли доставка"
     )
-    # оплачена ли доставка (?)
     class Meta:
         verbose_name = "Доставка"
         verbose_name_plural = "Доставки"
