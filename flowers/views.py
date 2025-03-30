@@ -2,6 +2,20 @@ from django.shortcuts import render, redirect
 from django.shortcuts import get_object_or_404
 from flowers.models import Bouquet, Shop, BouquetFlower, Consult, BouquetReason, Reason
 from django.contrib import messages
+import folium
+
+
+MOSCOW_CENTER = [55.751244, 37.618423]
+
+
+def add_shop(folium_map, lat, lon, address):
+    kw = {"prefix": "fa", "color": "green", "icon": "arrow-up"}
+    html = f"""<h3>{address}</h3>"""
+    icon = folium.Icon(angle=180, **kw)
+    folium.Marker(
+        [lat, lon],
+        icon=icon, popup=html,
+    ).add_to(folium_map)
 
 
 def serialize_bouquet(bouquet):
@@ -23,15 +37,19 @@ def serialize_shop(shop):
 def index(request):
     recommended_bouquets = Bouquet.objects.filter(is_recommended=True)[:3]
     shops = Shop.objects.all()
+    shops_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
+    for shop in shops:
+        add_shop(shops_map, shop.latitude, shop.longitude, shop.address)
+    map = shops_map._repr_html_()
+    map  = map[:90] + '80' + map[92:]
     context = {'recommended_bouquets': [serialize_bouquet(bouquet) for bouquet in recommended_bouquets],
-               'shops': [serialize_shop(shop) for shop in shops] }
+               'shops': [serialize_shop(shop) for shop in shops],
+                'map': map }
     return render(request, 'index.html', context)
 
 def catalog(request):
     bouquets = Bouquet.objects.all()
     serialized_bouquets = [serialize_bouquet(bouquet) for bouquet in bouquets]
-    #first_three_bouquets = serialized_bouquets[:3]
-    #other_bouquets = serialized_bouquets[3:]
     chunk_bouquets=[]
     for i in range(0, len(serialized_bouquets), 3):
         chunk_bouquet = serialized_bouquets[i:i + 3]
@@ -71,9 +89,15 @@ def result(request):
         })
     
     shops = Shop.objects.all()
+    shops_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
+    for shop in shops:
+        add_shop(shops_map, shop.latitude, shop.longitude, shop.address)
+    map = shops_map._repr_html_()
+    map  = map[:90] + '80' + map[92:]
     context = {'shops': [serialize_shop(shop) for shop in shops],
                'bouquet': serialize_bouquet(bouquet),
-               'flowers': serialized_flowers}
+               'flowers': serialized_flowers,
+               'map': map}
     return render(request, 'result.html', context)
 
 

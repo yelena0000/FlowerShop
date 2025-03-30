@@ -39,6 +39,8 @@ class Shop(models.Model):
     photo = models.ImageField(blank=True,
                               null=True,
                               verbose_name='Фото')
+    longitude = models.FloatField(verbose_name='долгота', null=True)
+    latitude = models.FloatField(verbose_name='широта', null=True)
 
     class Meta:
         verbose_name = 'Магазин'
