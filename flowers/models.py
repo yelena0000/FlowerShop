@@ -5,15 +5,14 @@ from flowers.telegram_bot import send_consultation_notification
 
 
 class Reason(models.Model):
-    VOLUME_CHOICES = [
-        ('Свадьба'),
-        ('Похороны'),
-        ('День Рождения'),
-    ]
+    title = models.CharField(max_length=200, blank=True) 
 
     class Meta:
         verbose_name = "Повод для букета"
         verbose_name_plural = "Поводы для букетов"
+    
+    def __str__(self):
+        return str(self.title)
 
 
 class Buyer(models.Model):
@@ -210,7 +209,7 @@ class Consult(models.Model):
         return str(self.name)
       
 
-@receiver(post_save, sender=Consult)
-def consult_created(sender, instance, created, **kwargs):
-    if created:
-         send_consultation_notification(instance.id)
+#@receiver(post_save, sender=Consult)
+#def consult_created(sender, instance, created, **kwargs):
+#    if created:
+#         send_consultation_notification(instance.id)

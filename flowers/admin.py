@@ -1,10 +1,14 @@
 from django.contrib import admin
-from flowers.models import Buyer, Delivery, Consult, Bouquet, Flower, BouquetFlower, BouquetReason, Shop
+from flowers.models import Buyer, Delivery, Consult, Bouquet, Flower, BouquetFlower, BouquetReason, Shop, Reason
 
 
 @admin.register(Buyer)
 class BuyerAdmin(admin.ModelAdmin):
     list_display = ('buyer_name', 'buyer_phone')
+
+@admin.register(Reason)
+class ReasonAdmin(admin.ModelAdmin):
+    list_display = ('title',)
 
 
 @admin.register(Delivery)

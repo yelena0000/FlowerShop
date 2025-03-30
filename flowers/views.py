@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.shortcuts import get_object_or_404
-from flowers.models import Bouquet, Shop, BouquetFlower, Buyer, Consult
+from flowers.models import Bouquet, Shop, BouquetFlower, Consult, BouquetReason, Reason
 from django.contrib import messages
 
 
@@ -27,7 +27,16 @@ def index(request):
     return render(request, 'index.html', context)
 
 def catalog(request):
-    return render(request, 'catalog.html')
+    bouquets = Bouquet.objects.all()
+    serialized_bouquets = [serialize_bouquet(bouquet) for bouquet in bouquets]
+    #first_three_bouquets = serialized_bouquets[:3]
+    #other_bouquets = serialized_bouquets[3:]
+    chunk_bouquets=[]
+    for i in range(0, len(serialized_bouquets), 3):
+        chunk_bouquet = serialized_bouquets[i:i + 3]
+        chunk_bouquets.append(chunk_bouquet)
+    context = {'chunk_bouquets': chunk_bouquets}
+    return render(request, 'catalog.html', context)
 
 
 def flower_detail(request):
@@ -43,7 +52,26 @@ def quiz_step(request):
 
 
 def result(request):
-    return render(request, 'result.html')
+    price = [0, 5000]
+    reason_id = 1
+    reason = get_object_or_404(Reason, id=reason_id)
+    bouquets = BouquetReason.objects.filter(reason=reason)
+    relevant_bouquets = []
+    for bouquet in bouquets:
+        relevant_bouquets.append(bouquet.bouquet.title)
+    bouquet = Bouquet.objects.filter(title__in=relevant_bouquets, price__gt=price[0], price__lt=price[1]).first()
+    bouquet_flowers = BouquetFlower.objects.filter(bouquet=bouquet)
+    serialized_flowers = []
+    for flower in bouquet_flowers:
+        serialized_flowers.append({
+            'title': flower.flower,
+            'amount': flower.amount,       
+        })
+    shops = Shop.objects.all()
+    context = {'shops': [serialize_shop(shop) for shop in shops],
+               'bouquet': serialize_bouquet(bouquet),
+               'flowers': serialized_flowers}
+    return render(request, 'result.html', context)
 
 
 def order(request, pk=None):
