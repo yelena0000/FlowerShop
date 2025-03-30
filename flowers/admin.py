@@ -73,9 +73,17 @@ class BouquetAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'client', 'bouquet', 'delivery_time', 'is_completed', 'created_at')
+    list_display = ('id', 'client', 'bouquet', 'display_bouquet_price', 'delivery_time', 'is_completed', 'created_at')
     list_filter = ('is_completed', 'delivery_time')
     search_fields = ('client__name', 'client__phone', 'bouquet__name', 'address')
     raw_id_fields = ('client', 'bouquet')
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
+
+    def display_bouquet_price(self, obj):
+        if obj.bouquet:
+            return f"{obj.bouquet.price} руб."
+        return "—"
+
+    display_bouquet_price.short_description = 'Цена букета'
+    display_bouquet_price.admin_order_field = 'bouquet__price'

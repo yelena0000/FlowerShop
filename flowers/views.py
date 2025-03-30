@@ -1,5 +1,6 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404, reverse
 from django.contrib import messages
+import folium
 from django.core.paginator import Paginator
 import random
 
@@ -14,6 +15,15 @@ DELIVERY_TIME_CHOICES = [
     ('16-18', 'с 16:00 до 18:00'),
     ('18-20', 'с 18:00 до 20:00'),
 ]
+MOSCOW_CENTER = [55.751244, 37.618423]
+
+
+def add_shop(map_obj, lat, lon, address):
+    folium.Marker(
+        location=[lat, lon],
+        popup=address,
+        icon=folium.Icon(color="red", icon="info-sign")
+    ).add_to(map_obj)
 
 
 def serialize_bouquet(bouquet):
@@ -45,14 +55,48 @@ def index(request):
 
 
 def catalog(request):
-    bouquets = Bouquet.objects.all()
+    # Получаем все букеты с оптимизацией запросов
+    bouquets = Bouquet.objects.all().prefetch_related(
+        'occasions',
+        'bouquetflower_set__flower'
+    )
+
+    # Сериализация букетов
     serialized_bouquets = []
     for bouquet in bouquets:
+        # Получаем состав букета
+        flowers_info = [
+            {
+                'title': bf.flower.name,
+                'amount': bf.amount
+            }
+            for bf in bouquet.bouquetflower_set.all()
+        ]
+
         serialized_bouquets.append({
-            **serialize_bouquet(bouquet),
-            'url': bouquet.get_absolute_url()
+            'id': bouquet.id,
+            'title': bouquet.name,
+            'slug': bouquet.slug,
+            'price': bouquet.price,
+            'photo': bouquet.photo.url if bouquet.photo else None,
+            'description': bouquet.description,
+            'budget_category': bouquet.get_budget_category_display(),
+            'is_recommended': bouquet.is_recommended,
+            'flowers': flowers_info,
+            'url': reverse('card', kwargs={'slug': bouquet.slug})
         })
-    return render(request, 'catalog.html', {'bouquets': serialized_bouquets})
+
+    # Разбиваем на группы по 3 букета
+    chunk_bouquets = [
+        serialized_bouquets[i:i + 3]
+        for i in range(0, len(serialized_bouquets), 3)
+    ]
+
+    return render(request, 'catalog.html', {
+        'chunk_bouquets': chunk_bouquets,
+        'bouquets': serialized_bouquets,
+        'budget_categories': Bouquet.BUDGET_CHOICES
+    })
 
 
 def quiz(request):
@@ -70,10 +114,14 @@ def quiz_step(request):
 
 def result(request):
     if request.method == 'POST':
-
         occasion_id = request.session.get('occasion_id')
         price_range = request.POST.get('price_range', 'any')
-        bouquets = Bouquet.objects.filter(occasions__id=occasion_id)
+
+        bouquets = Bouquet.objects.filter(occasions__id=occasion_id) \
+            .prefetch_related(
+            'bouquetflower_set__flower',
+            'occasions'
+        )
 
         if price_range != 'any':
             bouquets = bouquets.filter(budget_category=price_range)
@@ -85,7 +133,29 @@ def result(request):
 
         request.session['selected_bouquet_id'] = bouquet.id
 
-        return render(request, 'result.html', {'bouquet': bouquet})
+        flowers_info = [
+            {
+                'name': bf.flower.name,
+                'amount': bf.amount
+            }
+            for bf in bouquet.bouquetflower_set.all()
+        ]
+
+        shops = Shop.objects.all()
+        shops_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
+
+        for shop in shops:
+            add_shop(shops_map, shop.latitude, shop.longitude, shop.address)
+
+        map_html = shops_map._repr_html_()
+        map_html = map_html[:90] + '80' + map_html[92:]
+
+        return render(request, 'result.html', {
+            'bouquet': bouquet,
+            'flowers': flowers_info,
+            'shops': shops,
+            'map': map_html
+        })
 
     return redirect('quiz')
 

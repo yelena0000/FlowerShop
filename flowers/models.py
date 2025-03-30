@@ -27,6 +27,14 @@ class Shop(models.Model):
         blank=True,
         default=''
     )
+    longitude = models.FloatField(
+        verbose_name='долгота',
+        null=True
+    )
+    latitude = models.FloatField(
+        verbose_name='широта',
+        null=True
+    )
 
     class Meta:
         verbose_name = 'Магазин'
@@ -51,9 +59,18 @@ class Occasion(models.Model):
 
 class Client(models.Model):
     """Объединенная модель клиента"""
-    name = models.CharField(max_length=200, verbose_name="Имя")
-    phone = models.CharField(max_length=15, verbose_name="Телефон")
-    is_consultation = models.BooleanField(default=False, verbose_name="Заявка на консультацию")
+    name = models.CharField(
+        max_length=200,
+        verbose_name="Имя"
+    )
+    phone = models.CharField(
+        max_length=15,
+        verbose_name="Телефон"
+    )
+    is_consultation = models.BooleanField(
+        default=False,
+        verbose_name="Заявка на консультацию"
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Дата создания",
@@ -70,7 +87,12 @@ class Client(models.Model):
 
 class Flower(models.Model):
     """Упрощенная модель цветка"""
-    name = models.CharField(max_length=200, unique=True, verbose_name="Название", default="Без названия")
+    name = models.CharField(
+        max_length=200,
+        unique=True,
+        verbose_name="Название",
+        default="Без названия"
+    )
 
     class Meta:
         verbose_name = 'Цветок'
@@ -88,14 +110,24 @@ class Bouquet(models.Model):
         ('high', 'От 5 000 руб'),
     ]
 
-    name = models.CharField(max_length=200, verbose_name="Название", default="Без названия")
-    slug = models.SlugField(max_length=200, unique=True)
+    name = models.CharField(
+        max_length=200,
+        verbose_name="Название",
+        default="Без названия"
+    )
+    slug = models.SlugField(
+        max_length=200,
+        unique=True
+    )
     description = models.TextField(
         verbose_name="Описание",
         blank=True,
         default=''
     )
-    price = models.PositiveIntegerField(verbose_name="Цена", default=0)
+    price = models.PositiveIntegerField(
+        verbose_name="Цена",
+        default=0
+    )
     photo = models.ImageField(
         upload_to='bouquets/',
         verbose_name="Фото",
