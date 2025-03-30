@@ -1,154 +1,96 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Flower Shop</title>
-	<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Unbounded:wght@700&display=swap" rel="stylesheet">
-	<link rel="stylesheet" href="{% static 'css/main.css' %}">
-    <style>
-        .payment-success {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
-            z-index: 1000;
-            text-align: center;
-        }
-        .payment-success.show {
-            display: block;
-        }
-        .overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-        }
-        .overlay.show {
-            display: block;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flower Shop - Оплата заказа</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Unbounded:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
 </head>
 <body>
-	<header id="header">
-		<div class="container">
-			<div class="header ficb">
-				<a href="{% url 'index' %}">
-					<img src="{% static 'img/logo.svg' %}" alt="logo" class="logo">
-				</a>
-				<nav>
-					<ul class="menu ficc">
-						<li class="menu__item"><a href="{% url 'catalog' %}" class="menu__item_link">Каталог</a></li>
-						<li class="menu__item"><a href="{% url 'index' %}#recommended" class="menu__item_link">Рекомендации</a></li>
-						<li class="menu__item"><a href="{% url 'index' %}#contacts" class="menu__item_link">Контакты</a></li>
-					</ul>
-				</nav>
-			</div>
-		</div>
-	</header>
-	<section id="orderStep">
-		<div class="container">
-			<div class="order orderStep">
-				<div class="order__block">
-					<div class="order_items">
-						<div class="title">Оплата</div>
-						<form action="#" class="order__form orderStep_form">
-							<div class="order__form_block">
-								<div class="order__form_items">
-									<div class="order__form_intro">номер карты</div>
-									<input type="text" name="cardNum" class="order__form_input orderStep_form_input" placeholder="Введите номер" required>
-									<div class="order__form_item fic">
-										<input type="text" name="cardMm" class="order__form_input orderStep_form_input" placeholder="ММ" required>
-										<input type="text" name="cardGg" class="order__form_input orderStep_form_input" placeholder="ГГ" required>
-									</div>
-									
-									<input type="text" name="cardFname" class="order__form_input orderStep_form_input" placeholder="Имя владельца" required>
-									<input type="text" name="cardCvc" class="order__form_input orderStep_form_input" placeholder="CVC" required>
-								</div>
-								<div class="order__form_items">
-									<div class="order__form_intro">Ваш e-mail (необязательно)</div>
-									<input type="email" name="mail" class="order__form_input orderStep_form_input" placeholder="pochta@mail.ru">
-								</div>
-							</div>
-							<div class="order__form_line"></div>
-							<div class="order__form_btns ficb">
-								<button class="btn order__form_pay">Оплатить</button>
-								<button class="btn order__form_btn" onclick="window.location.href='{% url 'order' %}'">Назад</button>
-							</div>
-						</form>
-					</div>
-					<!-- <div class="blockImgHiden"></div> -->
-				</div>
-			</div>
-		</div>
-		<img src="{% static 'img/orderImg.jpg' %}" alt="orderImg" class="order__img">
-	</section>
-	<footer id="footer">
-		<div class="container">
-			<div class="footer">
-				<a href="{% url 'index' %}">
-                    <img src="{% static 'img/logo.svg' %}" alt="logo" class="logo footer__logo">
+    <header id="header">
+        <div class="container">
+            <div class="header ficb">
+                <a href="{% url 'index' %}" class="logo-link">
+                    <img src="{% static 'img/logo.svg' %}" alt="FlowerShop" class="logo">
                 </a>
-				<nav>
-					<ul class="menu footer__menu ficc">
-						<li class="menu__item"><a href="{% url 'catalog' %}" class="menu__item_link">Каталог</a></li>
-						<li class="menu__item"><a href="{% url 'index' %}#recommended" class="menu__item_link">Рекомендации</a></li>
-						<li class="menu__item"><a href="{% url 'index' %}#contacts" class="menu__item_link">Контакты</a></li>
-					</ul>
-				</nav>
-				<hr class="line"></hr>
-				<a href="#" class="footer__poli">Политика конфиденциальности</a>
-				<p class="footer_cop">©️2022. FlowerShop. Все права защищены</p>
-			</div>
-		</div>
-	</footer>
-        <div class="overlay" id="overlay"></div>
-    <div class="payment-success" id="paymentSuccess">
-        <h3>Оплата прошла успешно!</h3>
-        <p>Демо-платеж через ЮKassa завершен</p>
-        <button onclick="closePaymentModal()">OK</button>
-    </div>
+                <nav>
+                    <ul class="menu ficc">
+                        <li class="menu__item"><a href="{% url 'catalog' %}" class="menu__item_link">Каталог</a></li>
+                        <li class="menu__item"><a href="{% url 'index' %}#recommended" class="menu__item_link">Рекомендации</a></li>
+                        <li class="menu__item"><a href="{% url 'index' %}#contacts" class="menu__item_link">Контакты</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
 
-    <script>
-        document.querySelector('.order__form_pay').addEventListener('click', function(e) {
-            e.preventDefault();
+    <section id="orderStep">
+        <div class="container">
+            <div class="order orderStep">
+                <div class="order__block">
+                    <div class="order_items">
+                        <div class="title">Оплата заказа</div>
+                        <form action="{% url 'order_step' %}" method="POST" class="order__form orderStep_form">
+                            {% csrf_token %}
+                            <div class="order__form_block">
+                                <div class="order__form_items">
+                                    <div class="order__form_intro">Номер карты</div>
+                                    <input type="text" name="card_number" class="order__form_input orderStep_form_input"
+                                           placeholder="1234 5678 9012 3456" required pattern="\d{16}">
 
-            const cardNum = document.querySelector('[name="cardNum"]').value;
-            const cardMm = document.querySelector('[name="cardMm"]').value;
-            const cardGg = document.querySelector('[name="cardGg"]').value;
-            const cardCvc = document.querySelector('[name="cardCvc"]').value;
-            const email = document.querySelector('[name="mail"]').value;
+                                    <div class="order__form_item fic">
+                                        <input type="text" name="card_month" class="order__form_input orderStep_form_input"
+                                               placeholder="ММ" required pattern="\d{2}" maxlength="2">
+                                        <input type="text" name="card_year" class="order__form_input orderStep_form_input"
+                                               placeholder="ГГ" required pattern="\d{2}" maxlength="2">
+                                    </div>
 
-            if (!cardNum || !cardMm || !cardGg || !cardCvc) {
-                alert('Пожалуйста, заполните все обязательные поля');
-                return;
-            }
+                                    <input type="text" name="card_holder" class="order__form_input orderStep_form_input"
+                                           placeholder="Имя владельца" required>
+                                    <input type="text" name="card_cvc" class="order__form_input orderStep_form_input"
+                                           placeholder="CVC" required pattern="\d{3}" maxlength="3">
+                                </div>
+                                <div class="order__form_items">
+                                    <div class="order__form_intro">Ваш e-mail (необязательно)</div>
+                                    <input type="email" name="email" class="order__form_input orderStep_form_input"
+                                           placeholder="example@mail.com">
+                                </div>
+                            </div>
+                            <div class="order__form_line"></div>
+                            <div class="order__form_btns ficb">
+                                <button type="submit" class="btn order__form_pay" onclick="window.location.href='{% url 'success_order' %}'">Оплатить</button>
+                                <button type="button" class="btn order__form_btn" onclick="window.location.href='{% url 'order' %}'">Назад</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <img src="{% static 'img/orderImg.jpg' %}" alt="Доставка цветов" class="order__img">
+    </section>
 
-            setTimeout(() => {
-                showPaymentSuccess();
-
-            }, 1500);
-        });
-
-        function showPaymentSuccess() {
-            document.getElementById('overlay').classList.add('show');
-            document.getElementById('paymentSuccess').classList.add('show');
-        }
-
-        function closePaymentModal() {
-            document.getElementById('overlay').classList.remove('show');
-            document.getElementById('paymentSuccess').classList.remove('show');
-        }
-    </script>
+    <footer id="footer">
+        <div class="container">
+            <div class="footer">
+                <a href="{% url 'index' %}">
+                    <img src="{% static 'img/logo.svg' %}" alt="FlowerShop" class="logo footer__logo">
+                </a>
+                <nav>
+                    <ul class="menu footer__menu ficc">
+                        <li class="menu__item"><a href="{% url 'catalog' %}" class="menu__item_link">Каталог</a></li>
+                        <li class="menu__item"><a href="{% url 'index' %}#recommended" class="menu__item_link">Рекомендации</a></li>
+                        <li class="menu__item"><a href="{% url 'index' %}#contacts" class="menu__item_link">Контакты</a></li>
+                    </ul>
+                </nav>
+                <hr class="line">
+                <a href="#" class="footer__poli">Политика конфиденциальности</a>
+                <p class="footer_cop">©️2022. FlowerShop. Все права защищены</p>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

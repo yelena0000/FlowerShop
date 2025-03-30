@@ -1,58 +1,97 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Flower Shop</title>
-	<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Unbounded:wght@700&display=swap" rel="stylesheet">
-	<link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flower Shop - Подбор букета</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Unbounded:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        .quiz__elem {
+            transition: all 0.3s ease;
+        }
+        .quiz__elem:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+    </style>
 </head>
 <body>
-	<header id="header">
-		<div class="container">
-			<div class="header ficb">
-				<a href="{% url 'index' %}">
-					<img src="{% static 'img/logo.svg' %}" alt="logo" class="logo">
-				</a>
-				<nav>
-					<ul class="menu ficc">
-						<li class="menu__item"><a href="{% url 'catalog' %}" class="menu__item_link">Каталог</a></li>
-						<li class="menu__item"><a href="{% url 'index' %}#recommended" class="menu__item_link">Рекомендации</a></li>
-						<li class="menu__item"><a href="{% url 'index' %}#contacts" class="menu__item_link">Контакты</a></li>
-					</ul>
-				</nav>
-			</div>
-		</div>
-	</header>
-	<section id="quiz">
-		<div class="container">
-			<div class="quiz">
-				<div class="quiz__back ">
-					<a href="{% url 'index' %}" class="quiz__back_link fic"><img src="{% static 'img/arrow-left.svg' %}" alt="arrow-left" class="arrowLeft">
-					<span class="quiz__back_intro">Назад</span></a>
-				</div>
-				<div class="quiz__block">
-					<h1 class="quiz__title">К какому событию нужен букет?</h1>
-					<div class="quiz__elems fic">
-						<button class="quiz__elem">Свадьба</button>
-						<button class="quiz__elem">День рождения</button>
-						<button class="quiz__elem">Без повода</button>
-					</div>
-					<div class="quiz__progress">
-						<div class="quiz__progress_step">
-							<span class="quiz__progress_num">1</span>
-							<span class="quiz__progress_in"> шаг из </span>
-							<span class="quiz__progress_num">2</span>
-						</div>
-						<div class="quiz__progress_line">
-							<div class="quiz__progress_lineActive"></div>
-						</div>
-					</div>
-				</div>
-				
-			</div>
-		</div>
-	</section>
+    <header id="header">
+        <div class="container">
+            <div class="header ficb">
+                <a href="{% url 'index' %}" class="logo-link">
+                    <img src="{% static 'img/logo.svg' %}" alt="FlowerShop" class="logo">
+                </a>
+                <nav>
+                    <ul class="menu ficc">
+                        <li class="menu__item"><a href="{% url 'catalog' %}" class="menu__item_link">Каталог</a></li>
+                        <li class="menu__item"><a href="{% url 'index' %}#recommended" class="menu__item_link">Рекомендации</a></li>
+                        <li class="menu__item"><a href="{% url 'index' %}#contacts" class="menu__item_link">Контакты</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <section id="quiz">
+        <div class="container">
+            <div class="quiz">
+                <div class="quiz__back">
+                    <a href="{% url 'index' %}" class="quiz__back_link fic" aria-label="Вернуться на главную">
+                        <img src="{% static 'img/arrow-left.svg' %}" alt="" class="arrowLeft">
+                        <span class="quiz__back_intro">Назад</span>
+                    </a>
+                </div>
+
+                <form action="{% url 'quiz_step' %}" method="POST" class="quiz-form">
+                    {% csrf_token %}
+                    <div class="quiz__block">
+                        <h1 class="quiz__title">К какому событию нужен букет?</h1>
+
+                        <div class="quiz__elems fic">
+                            {% for occasion in occasions %}
+                            <button type="submit"
+                                    name="occasion"
+                                    value="{{ occasion.id }}"
+                                    class="quiz__elem"
+                                    aria-label="Выбрать {{ occasion.name }}">
+                                {{ occasion.name }}
+                            </button>
+                            {% empty %}
+                            <p class="quiz__empty">Поводы временно недоступны</p>
+                            {% endfor %}
+                        </div>
+
+                        <div class="quiz__progress">
+                            <div class="quiz__progress_step">
+                                <span class="quiz__progress_num">1</span>
+                                <span class="quiz__progress_in"> шаг из </span>
+                                <span class="quiz__progress_num">2</span>
+                            </div>
+                            <div class="quiz__progress_line">
+                                <div class="quiz__progress_lineActive" style="width: 50%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Добавляем небольшую анимацию при наведении
+        document.querySelectorAll('.quiz__elem').forEach(button => {
+            button.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.05)';
+            });
+            button.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
 </body>
 </html>
