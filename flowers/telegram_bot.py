@@ -10,22 +10,16 @@ TG_BOT_TOKEN = env.str("TG_BOT_TOKEN")
 TG_CHAT_ID = env.str("TG_CHAT_ID")
 
 
-def send_consultation_notification(consult_id):
-    from flowers.models import Consult
-    consult = Consult.objects.get(id=consult_id)
+def send_consultation_notification(client_id):
+    from flowers.models import Client
+    client = Client.objects.get(id=client_id)
 
     message = (
-        "📞 Новая заявка на консультацию! 📞\n"
+        "📞 Новая заявка на консультацию!\n"
         "━━━━━━━━━━━━━━━━━━\n"
-        "👤 *Клиент:* {name}\n"
-        "📱 *Телефон:* {phone}\n"
-        "🕒 *Время заявки:* {time}\n"
-        "✅ *Статус:* {status}\n"
-    ).format(
-        name=consult.name if consult.name else "Не указано",
-        phone=consult.phone_number if consult.phone_number else "Не указан",
-        time=consult.consult_time.strftime('%d.%m.%Y в %H:%M'),
-        status="Завершена" if consult.is_finished else "Ожидает"
+        f"👤 *Имя*: {client.name}\n"
+        f"📱 *Телефон*: {client.phone}\n"
+        f"🕒 *Время заявки*: {client.created_at.strftime('%d.%m.%Y %H:%M')}"
     )
 
     bot = Bot(token=TG_BOT_TOKEN)
@@ -33,5 +27,29 @@ def send_consultation_notification(consult_id):
         chat_id=TG_CHAT_ID,
         text=message,
         parse_mode='Markdown',
-        disable_web_page_preview=True
+    )
+
+
+def send_delivery_notification(order_id):
+    from flowers.models import Order
+    order = Order.objects.get(id=order_id)
+
+    bouquet_info = f"💐 Букет: {order.bouquet.name}\n💰 Цена: {order.bouquet.price} руб\n" if order.bouquet else ""
+
+    message = (
+        "💐 *Новый заказ!*\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        f"👤 *Клиент*: {order.client.name}\n"
+        f"📱 *Телефон*: {order.client.phone}\n"
+        f"🏠 *Адрес*: {order.address}\n"
+        f"⏰ *Время доставки*: {order.get_delivery_time_display()}\n"
+        f"{bouquet_info}"
+        f"📅 *Дата заказа*: {order.created_at.strftime('%d.%m.%Y %H:%M')}"
+    )
+
+    bot = Bot(token=TG_BOT_TOKEN)
+    bot.send_message(
+        chat_id=TG_CHAT_ID,
+        text=message,
+        parse_mode='Markdown',
     )

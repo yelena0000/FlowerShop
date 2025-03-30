@@ -1,45 +1,32 @@
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from flowers.telegram_bot import send_consultation_notification
+from django.utils import timezone
+from django.urls import reverse
 
-
-class Reason(models.Model):
-    VOLUME_CHOICES = [
-        ('Свадьба'),
-        ('Похороны'),
-        ('День Рождения'),
-    ]
-
-    class Meta:
-        verbose_name = "Повод для букета"
-        verbose_name_plural = "Поводы для букетов"
-
-
-class Buyer(models.Model):
-    buyer_name = models.CharField(max_length=200, blank=True)
-    buyer_phone = models.CharField(max_length=15, blank=True)
-
-
-    class Meta:
-        verbose_name = "Покупатель"
-        verbose_name_plural = "Покупатели"
+from flowers.telegram_bot import send_consultation_notification, send_delivery_notification
 
 
 class Shop(models.Model):
     '''Магазин'''
-    title = models.CharField(max_length=100)
-    address = models.CharField(max_length=200,
-                               blank=True,
-                               null=True,
-                               verbose_name='адрес магазина')
-    phone_number = models.CharField(max_length=12,
-                                    blank=True,
-                                    null=True,
-                                    verbose_name='номер телефона')
-    photo = models.ImageField(blank=True,
-                              null=True,
-                              verbose_name='Фото')
+    title = models.CharField(
+        max_length=100,
+        verbose_name='Название магазина',
+        null=True,
+        blank=True
+    )
+    address = models.CharField(
+        max_length=200,
+        verbose_name='Адрес магазина',
+        null=True,
+        blank=True
+    )
+    phone_number = models.CharField(
+        max_length=20,
+        verbose_name='Телефон магазина',
+        blank=True,
+        default=''
+    )
 
     class Meta:
         verbose_name = 'Магазин'
@@ -47,170 +34,179 @@ class Shop(models.Model):
         ordering = ('title',)
 
     def __str__(self):
-        return str(self.title)
+        return self.title
+
+
+class Occasion(models.Model):
+    """Упрощенная модель повода"""
+    name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        verbose_name = "Повод"
+        verbose_name_plural = "Поводы"
+
+    def __str__(self):
+        return self.name
+
+
+class Client(models.Model):
+    """Объединенная модель клиента"""
+    name = models.CharField(max_length=200, verbose_name="Имя")
+    phone = models.CharField(max_length=15, verbose_name="Телефон")
+    is_consultation = models.BooleanField(default=False, verbose_name="Заявка на консультацию")
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата создания",
+    )
+
+    class Meta:
+        verbose_name = "Клиент"
+        verbose_name_plural = "Клиенты"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} ({self.phone})"
 
 
 class Flower(models.Model):
-    '''Цветок'''
-    title = models.CharField(max_length=200,
-                            blank=True,
-                            null=True,
-                            verbose_name='Название цветка')
+    """Упрощенная модель цветка"""
+    name = models.CharField(max_length=200, unique=True, verbose_name="Название", default="Без названия")
 
     class Meta:
         verbose_name = 'Цветок'
-        verbose_name_plural = 'Цветки'
+        verbose_name_plural = 'Цветы'
 
     def __str__(self):
-        return str(self.title)
+        return self.name
 
 
 class Bouquet(models.Model):
-    '''Букет'''
-    title = models.CharField(max_length=200,
-                             blank=True,
-                             null=True,
-                             verbose_name='Название букета')
-    
-    slug = models.SlugField("Название в виде url", max_length=200, default='')
-    description = models.TextField(blank=True,
-                                   null=True,
-                                   verbose_name='Описание букета')
-    reasons = models.ManyToManyField(Reason,
-                                     through='BouquetReason',
-                                     blank=True,
-                                     verbose_name='Поводы')
-    flowers = models.ManyToManyField(Flower,
-                                     through="BouquetFlower",
-                                     blank=True,
-                                     verbose_name='Цветы',)
-    price = models.IntegerField(blank=True,
-                                null=True,
-                                verbose_name='Цена букета')
-    photo = models.ImageField(blank=True,
-                              null=True,
-                              verbose_name='Фото')
-    width = models.IntegerField(null=True, verbose_name='Ширина')
-    height = models.IntegerField(null=True, verbose_name='Высота')
-    
-    is_recommended = models.BooleanField('Входит ли в рекомендации', db_index=False, default=False)
+    """Оптимизированная модель букета"""
+    BUDGET_CHOICES = [
+        ('low', 'До 1 000 руб'),
+        ('medium', '1 000 - 5 000 руб'),
+        ('high', 'От 5 000 руб'),
+    ]
+
+    name = models.CharField(max_length=200, verbose_name="Название", default="Без названия")
+    slug = models.SlugField(max_length=200, unique=True)
+    description = models.TextField(
+        verbose_name="Описание",
+        blank=True,
+        default=''
+    )
+    price = models.PositiveIntegerField(verbose_name="Цена", default=0)
+    photo = models.ImageField(
+        upload_to='bouquets/',
+        verbose_name="Фото",
+        null=True,
+        blank=True
+    )
+    occasions = models.ManyToManyField(
+        Occasion,
+        verbose_name="Поводы",
+        blank=True
+    )
+    flowers = models.ManyToManyField(
+        Flower,
+        through='BouquetFlower',
+        verbose_name='Цветы в букете',
+        blank=True
+    )
+    budget_category = models.CharField(
+        max_length=10,
+        choices=BUDGET_CHOICES,
+        default='medium',
+        verbose_name="Категория бюджета"
+    )
+    is_recommended = models.BooleanField(default=False, verbose_name="Рекомендуемый")
+
+    def get_absolute_url(self):
+        return reverse('card', kwargs={'slug': self.slug})
 
     class Meta:
         verbose_name = 'Букет'
         verbose_name_plural = 'Букеты'
+        ordering = ['name']
 
     def __str__(self):
-        return str(self.title)
-
-
-class BouquetReason(models.Model):
-    '''Букет по поводу'''
-    bouquet = models.ForeignKey(Bouquet,
-                                on_delete=models.CASCADE,
-                                blank=True,
-                                null=True)
-    reason = models.ForeignKey(Reason,
-                               on_delete=models.CASCADE,
-                               blank=True,
-                               null=True)
-
-    class Meta:
-        verbose_name = 'Букет по поводу'
-        verbose_name_plural = 'Букет по поводу'
-
-    def __str__(self):
-        result = self.bouquet, self.reason
-        return str(result)
+        return self.name
 
 
 class BouquetFlower(models.Model):
-    '''Букет с цветами'''
-    bouquet = models.ForeignKey(Bouquet,
-                                on_delete=models.CASCADE,
-                                blank=True,
-                                null=True,
-                                verbose_name='Название букета')
-    flower = models.ForeignKey(Flower,
-                               on_delete=models.CASCADE,
-                               blank=True,
-                               null=True)
-    amount = models.IntegerField(blank=True,
-                                 null=True,
-                                 verbose_name='Количество цветов')
-
-    class Meta:
-        verbose_name = 'Букет с цветами'
-        verbose_name_plural = 'Букеты с цветами'
-
-    def __str__(self):
-        result = self.bouquet, self.flower
-        return str(result)
-
-
-class Delivery(models.Model):
-    buyer_name = models.CharField(max_length=50,
-                                  blank=True,
-                                  null=True,
-                                  verbose_name="Имя клиента")
-
-    buyer_number = models.CharField(max_length=12,
-                                    blank=True,
-                                    null=True,
-                                    verbose_name="Номер телефона клиента")
-    
-    address = models.CharField(verbose_name="адрес",
-                               max_length=200,
-                               blank=True)
-    
-    delivery_time = models.CharField(max_length=200,
-                                     blank=True,
-                                     null=True,
-                                     verbose_name="Дата и время доставки")
-    
-    #flowers = models.ManyToManyField(Flowers)
-
-    is_finished = models.BooleanField(
-        default=False,
-        verbose_name="Выполнена ли доставка"
+    """Количество цветов в букете"""
+    bouquet = models.ForeignKey(
+        Bouquet,
+        on_delete=models.CASCADE,
+        default=1,
+        verbose_name="Букет"
     )
-    # оплачена ли доставка (?)
-    class Meta:
-        verbose_name = "Доставка"
-        verbose_name_plural = "Доставки"
-
-
-class Consult(models.Model):
-    '''Консультация'''
-    name = models.CharField(max_length=50,
-                                blank=True,
-                                null=True,
-                                verbose_name="Имя клиента")
-
-    phone_number = models.CharField(max_length=12,
-                                    blank=True,
-                                    null=True,
-                                    verbose_name="Номер телефона клиента")
-
-    is_finished = models.BooleanField(default=False,
-                                      blank=True,
-                                      null=True,
-                                      verbose_name="Выполнена ли консультация")
-
-    consult_time = models.DateTimeField(auto_now_add=True,
-                                        blank=True,
-                                        null=True,
-                                        verbose_name="Дата и время запроса консультации")
-
+    flower = models.ForeignKey(
+        Flower,
+        on_delete=models.CASCADE,
+        default=1,
+        verbose_name="Цветок"
+    )
+    amount = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name="Количество",
+        null=True,
+        blank=True
+    )
 
     class Meta:
-        verbose_name = "Консультация"
-        verbose_name_plural = "Консультации"
-        
+        verbose_name = 'Цветок в букете'
+        verbose_name_plural = 'Цветы в букетах'
+
     def __str__(self):
-        return str(self.name)
-      
+        return f"{self.flower.name} ({self.amount}) в {self.bouquet.name}"
 
-@receiver(post_save, sender=Consult)
-def consult_created(sender, instance, created, **kwargs):
+
+class Order(models.Model):
+    """Модель заказа"""
+    DELIVERY_TIME_CHOICES = [
+        ('ASAP', 'Как можно скорее'),
+        ('10-12', 'с 10:00 до 12:00'),
+        ('12-14', 'с 12:00 до 14:00'),
+        ('14-16', 'с 14:00 до 16:00'),
+        ('16-18', 'с 16:00 до 18:00'),
+        ('18-20', 'с 18:00 до 20:00'),
+    ]
+
+    client = models.ForeignKey(Client, on_delete=models.PROTECT, verbose_name="Клиент")
+    bouquet = models.ForeignKey(
+        Bouquet,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name="Букет"
+    )
+    address = models.TextField(verbose_name="Адрес доставки")
+    delivery_time = models.CharField(
+        max_length=5,
+        choices=DELIVERY_TIME_CHOICES,
+        verbose_name="Время доставки",
+        blank=True,
+        default='ASAP'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    is_completed = models.BooleanField(default=False, verbose_name="Завершено")
+
+    class Meta:
+        verbose_name = "Заказ"
+        verbose_name_plural = "Заказы"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Заказ #{self.id} от {self.client.name}"
+
+
+@receiver(post_save, sender=Client)
+def client_created(sender, instance, created, **kwargs):
+    if created and instance.is_consultation:
+        send_consultation_notification(instance.id)
+
+@receiver(post_save, sender=Order)
+def order_created(sender, instance, created, **kwargs):
     if created:
-         send_consultation_notification(instance.id)
+        send_delivery_notification(instance.id)

@@ -1,115 +1,251 @@
-from django.shortcuts import render, redirect
-from django.shortcuts import get_object_or_404
-from flowers.models import Bouquet, Shop, BouquetFlower, Buyer, Consult
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.core.paginator import Paginator
+import random
+
+from .models import Bouquet, Flower, Occasion, Client, Order, Shop, BouquetFlower
+
+
+DELIVERY_TIME_CHOICES = [
+    ('ASAP', 'Как можно скорее'),
+    ('10-12', 'с 10:00 до 12:00'),
+    ('12-14', 'с 12:00 до 14:00'),
+    ('14-16', 'с 14:00 до 16:00'),
+    ('16-18', 'с 16:00 до 18:00'),
+    ('18-20', 'с 18:00 до 20:00'),
+]
 
 
 def serialize_bouquet(bouquet):
+    photo_url = bouquet.photo.url if bouquet.photo and hasattr(bouquet.photo, 'url') else None
     return {
-        "title": bouquet.title,
+        "title": bouquet.name,
         "price": bouquet.price,
-        "photo": bouquet.photo,
-        'slug': bouquet.slug}
+        "photo": photo_url,
+        'slug': bouquet.slug
+    }
 
 
 def serialize_shop(shop):
-    return{
+    return {
         'title': shop.title,
         'address': shop.address,
         'phone_number': shop.phone_number
     }
 
+
 def index(request):
     recommended_bouquets = Bouquet.objects.filter(is_recommended=True)[:3]
     shops = Shop.objects.all()
-    context = {'recommended_bouquets': [serialize_bouquet(bouquet) for bouquet in recommended_bouquets],
-               'shops': [serialize_shop(shop) for shop in shops] }
+    context = {
+        'recommended_bouquets': [serialize_bouquet(bouquet) for bouquet in recommended_bouquets],
+        'shops': [serialize_shop(shop) for shop in shops]
+    }
     return render(request, 'index.html', context)
 
+
 def catalog(request):
-    return render(request, 'catalog.html')
-
-
-def flower_detail(request):
-    return render(request, 'card.html')
+    bouquets = Bouquet.objects.all()
+    serialized_bouquets = []
+    for bouquet in bouquets:
+        serialized_bouquets.append({
+            **serialize_bouquet(bouquet),
+            'url': bouquet.get_absolute_url()
+        })
+    return render(request, 'catalog.html', {'bouquets': serialized_bouquets})
 
 
 def quiz(request):
-    return render(request, 'quiz.html')
+    occasions = Occasion.objects.all()
+    return render(request, 'quiz.html', {'occasions': occasions})
 
 
 def quiz_step(request):
-    return render(request, 'quiz-step.html')
+    if request.method == 'POST':
+        request.session['occasion_id'] = request.POST.get('occasion')
+        return render(request, 'quiz-step.html')
+
+    return redirect('quiz')
 
 
 def result(request):
-    return render(request, 'result.html')
+    if request.method == 'POST':
+
+        occasion_id = request.session.get('occasion_id')
+        price_range = request.POST.get('price_range', 'any')
+        bouquets = Bouquet.objects.filter(occasions__id=occasion_id)
+
+        if price_range != 'any':
+            bouquets = bouquets.filter(budget_category=price_range)
+
+        bouquet = bouquets.order_by('?').first()
+
+        if not bouquet:
+            return redirect('quiz')
+
+        request.session['selected_bouquet_id'] = bouquet.id
+
+        return render(request, 'result.html', {'bouquet': bouquet})
+
+    return redirect('quiz')
 
 
-def order(request, pk=None):
-    return render(request, 'order.html')
+def order(request):
+    bouquet_slug = request.GET.get('bouquet_slug')
+    from_quiz = request.GET.get('from_quiz') == 'true'
+    bouquet_id = request.GET.get('bouquet_id')
+
+    if from_quiz and bouquet_id:
+        # Если после квиза
+        try:
+            bouquet = get_object_or_404(Bouquet, id=bouquet_id)
+            request.session['selected_bouquet_id'] = bouquet.id
+        except (ValueError, Bouquet.DoesNotExist):
+            return redirect('catalog')
+    elif bouquet_slug:
+        # Если с карточки товара
+        try:
+            bouquet = get_object_or_404(Bouquet, slug=bouquet_slug)
+            request.session['selected_bouquet_id'] = bouquet.id
+        except (ValueError, Bouquet.DoesNotExist):
+            return redirect('catalog')
+    else:
+        # Если нет параметров - проверяем сессию
+        bouquet_id = request.session.get('selected_bouquet_id')
+        if not bouquet_id:
+            return redirect('catalog')
+        try:
+            bouquet = get_object_or_404(Bouquet, id=bouquet_id)
+        except (ValueError, Bouquet.DoesNotExist):
+            return redirect('catalog')
+
+    if request.method == 'POST':
+        try:
+            required_fields = ['tel', 'fname', 'adres']
+            if not all(request.POST.get(field) for field in required_fields):
+                return render(request, 'order.html', {
+                    'bouquet': bouquet,
+                    'delivery_times': DELIVERY_TIME_CHOICES,
+                    'form_data': request.POST
+                })
+
+            client, created = Client.objects.get_or_create(
+                phone=request.POST['tel'],
+                defaults={
+                    'name': request.POST['fname'],
+                    'is_consultation': False
+                }
+            )
+
+            if not created:
+                client.name = request.POST['fname']
+                client.save()
+
+            Order.objects.create(
+                client=client,
+                bouquet=bouquet,
+                address=request.POST['adres'],
+                delivery_time=request.POST.get('orderTime', 'ASAP')
+            )
+
+            return redirect('order_step')
+
+        except Exception as e:
+            messages.error(request, f'Ошибка при оформлении заказа: {str(e)}')
+            return render(request, 'order.html', {
+                'bouquet': bouquet,
+                'delivery_times': DELIVERY_TIME_CHOICES,
+                'form_data': request.POST
+            })
+
+    return render(request, 'order.html', {
+        'bouquet': bouquet,
+        'delivery_times': DELIVERY_TIME_CHOICES
+    })
 
 
 def order_step(request):
+    if request.method == 'POST':
+        try:
+            card_number = request.POST.get('card_number', '').replace(' ', '')
+            if len(card_number) != 16 or not card_number.isdigit():
+                return redirect('order_step')
+
+            if 'selected_bouquet_id' in request.session:
+                del request.session['selected_bouquet_id']
+            if 'occasion_id' in request.session:
+                del request.session['occasion_id']
+
+            return render(request, 'success_order.html')
+
+        except Exception as e:
+            return redirect('order_step')
+
+    if 'selected_bouquet_id' not in request.session:
+        return redirect('order')
+
     return render(request, 'order-step.html')
 
 
 def consultation(request):
     if request.method == 'POST':
-        name = request.POST.get('fname')
-        phone = request.POST.get('tel')
-
-        if not name or not phone:
-            messages.error(request, 'Пожалуйста, заполните все поля.')
+        if not all([request.POST.get('tel'), request.POST.get('fname')]):
             return render(request, 'consultation.html')
 
-        Consult.objects.create(
-            name=name,
-            phone_number=phone
-        )
-        messages.success(request, 'Заявка на консультацию успешно отправлена!')
-        return redirect('success_consult')
+        try:
+            Client.objects.create(
+                name=request.POST['fname'],
+                phone=request.POST['tel'],
+                is_consultation=True
+            )
+            return redirect('success_consult')
+        except Exception as e:
+            return render(request, 'consultation.html')
 
     return render(request, 'consultation.html')
 
 
 def card(request, slug):
     bouquet = get_object_or_404(Bouquet, slug=slug)
-    bouquet_flowers = BouquetFlower.objects.filter(bouquet=bouquet)
+    bouquet_flowers = BouquetFlower.objects.filter(bouquet=bouquet).select_related('flower')
+
     serialized_flowers = []
-    for flower in bouquet_flowers:
+    for bouquet_flower in bouquet_flowers:
         serialized_flowers.append({
-            'title': flower.flower,
-            'amount': flower.amount,       
+            'title': bouquet_flower.flower.name,
+            'amount': bouquet_flower.amount,
         })
-    serialized_bouquet = {
-        'title': bouquet.title,
-        'price': bouquet.price,
-        'photo': bouquet.photo,
-        'width': bouquet.width,
-        'height': bouquet.height,
-        'flowers': serialized_flowers
-    }
+
     context = {
-        'bouquet': serialized_bouquet
+        'bouquet': {
+            'title': bouquet.name,
+            'price': bouquet.price,
+            'photo': bouquet.photo.url if bouquet.photo and hasattr(bouquet.photo, 'url') else None,
+            'flowers': serialized_flowers,
+            'description': bouquet.description,
+            'slug': bouquet.slug
+        }
     }
     return render(request, 'card.html', context)
 
 
 def success_consult(request):
     if request.method == 'POST':
-        name = request.POST.get('fname')
-        phone = request.POST.get('tel')
-
-        if not name or not phone:
-            messages.error(request, 'Пожалуйста, заполните все поля.')
+        if not all([request.POST.get('tel'), request.POST.get('fname')]):
+            messages.error(request, 'Пожалуйста, заполните все обязательные поля')
             return render(request, 'consultation.html')
 
-        Consult.objects.create(
-            name=name,
-            phone_number=phone
-        )
-        messages.success(request, 'Заявка на консультацию успешно отправлена!')
-        return redirect('success_consult')
+        try:
+            Client.objects.create(
+                name=request.POST['fname'],
+                phone=request.POST['tel'],
+                is_consultation=True
+            )
+            return redirect('success_consult')
+        except Exception as e:
+            return render(request, 'consultation.html')
 
     return render(request, 'success_consult.html')
+
+def success_order(request):
+    return render(request, 'success_order.html')
