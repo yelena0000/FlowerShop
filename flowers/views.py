@@ -9,7 +9,8 @@ def serialize_bouquet(bouquet):
         "title": bouquet.title,
         "price": bouquet.price,
         "photo": bouquet.photo,
-        'slug': bouquet.slug}
+        'slug': bouquet.slug,
+        'description': bouquet.description}
 
 
 def serialize_shop(shop):
@@ -60,6 +61,7 @@ def result(request):
     for bouquet in bouquets:
         relevant_bouquets.append(bouquet.bouquet.title)
     bouquet = Bouquet.objects.filter(title__in=relevant_bouquets, price__gt=price[0], price__lt=price[1]).first()
+
     bouquet_flowers = BouquetFlower.objects.filter(bouquet=bouquet)
     serialized_flowers = []
     for flower in bouquet_flowers:
@@ -67,6 +69,7 @@ def result(request):
             'title': flower.flower,
             'amount': flower.amount,       
         })
+    
     shops = Shop.objects.all()
     context = {'shops': [serialize_shop(shop) for shop in shops],
                'bouquet': serialize_bouquet(bouquet),
