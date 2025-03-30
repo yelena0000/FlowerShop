@@ -31,7 +31,9 @@
 				<div class="order__block">
 					<div class="order_items">
 						<div class="title">Оформление доставки</div>
-						<form action="#" class="order__form">
+                        <form method="POST" action="{% url 'order' %}" class="order__form">
+                	        {% csrf_token %}
+{#						<form action="#" class="order__form">#}
 							<div class="order__form_block ficb">
 								<input type="text" name="fname" class="order__form_input" placeholder="Введите Имя" required>
 								<input type="text" name="tel" class="order__form_input" placeholder="+ 7 (999) 000 00 00" required>
@@ -66,7 +68,8 @@
 							</div>
 							<div class="order__form_line"></div>
 							<div class="order__form_btns ficb">
-								<button class="btn order__form_pay">Оплатить</button>
+                                <button type="submit" class="btn order__form_pay">Отправить</button>
+{#								<button class="btn order__form_pay">Оплатить</button>#}
 								<button class="btn order__form_btn">Назад</button>
 							</div>
 						</form>

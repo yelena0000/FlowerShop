@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.shortcuts import get_object_or_404
-from flowers.models import Bouquet, Shop, BouquetFlower, Consult, BouquetReason, Reason
+from flowers.models import Bouquet, Shop, BouquetFlower, Consult, BouquetReason, Reason, Delivery
 from django.contrib import messages
 import folium
 
@@ -102,6 +102,25 @@ def result(request):
 
 
 def order(request, pk=None):
+    def order(request, pk=None):
+        if request.method == 'POST':
+            buyer_name = request.POST.get('fname')
+            buyer_number = request.POST.get('tel')
+            address = request.POST.get('adres')
+            delivery_time = request.POST.get('orderTime')
+
+            if not buyer_name or not buyer_number or not address or not delivery_time:
+                messages.error(request, 'Пожалуйста, заполните все поля.')
+                return render(request, 'consultation.html')
+
+            Delivery.objects.create(
+                buyer_name=buyer_name,
+                buyer_number=buyer_number,
+                address=address,
+                delivery_time=delivery_time
+            )
+            return redirect('order')
+        return render(request, 'order.html')
     return render(request, 'order.html')
 
 
