@@ -40,13 +40,14 @@
                                 <div class="order__form_items">
                                     <div class="order__form_intro">Номер карты</div>
                                     <input type="text" name="card_number" class="order__form_input orderStep_form_input"
-                                           placeholder="1234 5678 9012 3456" required pattern="\d{16}">
+                                            placeholder="1234 5678 9012 3456" required pattern="\d{4} \d{4} \d{4} \d{4}">
 
                                     <div class="order__form_item fic">
-                                        <input type="text" name="card_month" class="order__form_input orderStep_form_input"
-                                               placeholder="ММ" required pattern="\d{2}" maxlength="2">
-                                        <input type="text" name="card_year" class="order__form_input orderStep_form_input"
-                                               placeholder="ГГ" required pattern="\d{2}" maxlength="2">
+                                        <input type="number" name="card_month" class="order__form_input orderStep_form_input"
+                                               placeholder="ММ" required min="1" max="12">
+                                        <input type="number" name="card_year" class="order__form_input orderStep_form_input"
+                                               placeholder="ГГ" required min="25">
+
                                     </div>
 
                                     <input type="text" name="card_holder" class="order__form_input orderStep_form_input"
@@ -62,7 +63,7 @@
                             </div>
                             <div class="order__form_line"></div>
                             <div class="order__form_btns ficb">
-                                <button type="submit" class="btn order__form_pay" onclick="window.location.href='{% url 'success_order' %}'">Оплатить</button>
+                                <button type="submit" class="btn order__form_pay">Оплатить</button>
                                 <button type="button" class="btn order__form_btn" onclick="window.location.href='{% url 'order' %}'">Назад</button>
                             </div>
                         </form>

@@ -202,7 +202,7 @@ def order(request):
     else:
         bouquet_id = request.session.get('selected_bouquet_id')
         if not bouquet_id:
-            return redirect('catalog')
+            return redirect('quiz')
         try:
             bouquet = get_object_or_404(Bouquet, id=bouquet_id)
         except (ValueError, Bouquet.DoesNotExist):
