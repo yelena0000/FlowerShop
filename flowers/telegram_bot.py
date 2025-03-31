@@ -7,7 +7,8 @@ env = Env()
 env.read_env()
 
 TG_BOT_TOKEN = env.str("TG_BOT_TOKEN")
-TG_CHAT_ID = env.str("TG_CHAT_ID")
+COURIER_CHAT_ID = env.str("COURIER_CHAT_ID")
+FLORIST_CHAT_ID = env.str("FLORIST_CHAT_ID")
 
 
 def send_consultation_notification(client_id):
@@ -24,7 +25,7 @@ def send_consultation_notification(client_id):
 
     bot = Bot(token=TG_BOT_TOKEN)
     bot.send_message(
-        chat_id=TG_CHAT_ID,
+        chat_id=FLORIST_CHAT_ID,
         text=message,
         parse_mode='Markdown',
     )
@@ -49,7 +50,7 @@ def send_delivery_notification(order_id):
 
     bot = Bot(token=TG_BOT_TOKEN)
     bot.send_message(
-        chat_id=TG_CHAT_ID,
+        chat_id=COURIER_CHAT_ID,
         text=message,
         parse_mode='Markdown',
     )
