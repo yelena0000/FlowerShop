@@ -75,6 +75,17 @@ class Client(models.Model):
         auto_now_add=True,
         verbose_name="Дата создания",
     )
+    quiz_occasion = models.ForeignKey(
+        Occasion,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+    quiz_price_range = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True
+    )
 
     class Meta:
         verbose_name = "Клиент"

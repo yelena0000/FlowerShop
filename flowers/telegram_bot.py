@@ -20,8 +20,21 @@ def send_consultation_notification(client_id):
         "━━━━━━━━━━━━━━━━━━\n"
         f"👤 *Имя*: {client.name}\n"
         f"📱 *Телефон*: {client.phone}\n"
-        f"🕒 *Время заявки*: {client.created_at.strftime('%d.%m.%Y %H:%M')}"
     )
+
+    if client.quiz_occasion and client.quiz_price_range:
+        price_ranges = {
+            'low': 'До 1 000 руб',
+            'medium': '1 000 - 5 000 руб',
+            'high': 'От 5 000 руб',
+            'any': 'Не имеет значения'
+        }
+        message += (
+            f"🎯 *Выбранный повод*: {client.quiz_occasion.name}\n"
+            f"💰 *Выбранный бюджет*: {price_ranges.get(client.quiz_price_range, client.quiz_price_range)}\n"
+        )
+
+    message += f"🕒 *Время заявки*: {client.created_at.strftime('%d.%m.%Y %H:%M')}"
 
     bot = Bot(token=TG_BOT_TOKEN)
     bot.send_message(

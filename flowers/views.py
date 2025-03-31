@@ -3,9 +3,9 @@ from django.contrib import messages
 import folium
 from django.core.paginator import Paginator
 import random
+import re
 
 from .models import Bouquet, Flower, Occasion, Client, Order, Shop, BouquetFlower
-
 
 DELIVERY_TIME_CHOICES = [
     ('ASAP', 'Как можно скорее'),
@@ -16,6 +16,16 @@ DELIVERY_TIME_CHOICES = [
     ('18-20', 'с 18:00 до 20:00'),
 ]
 MOSCOW_CENTER = [55.751244, 37.618423]
+
+
+def is_valid_phone(phone):
+    phone = re.sub(r'\D', '', phone)
+    return len(phone) == 11 and phone[0] in ['7', '8']
+
+
+def is_valid_card(card_number):
+    card_number = card_number.replace(' ', '')
+    return len(card_number) == 16 and card_number.isdigit()
 
 
 def add_shop(map_obj, lat, lon, address):
@@ -46,18 +56,15 @@ def serialize_shop(shop):
 
 
 def index(request):
-
     recommended_bouquets = Bouquet.objects.filter(is_recommended=True)[:3]
-
     shops = Shop.objects.all()
-
     shops_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
 
     for shop in shops:
         folium.Marker(
             location=[shop.latitude, shop.longitude],
             popup=shop.address,
-            icon=folium.Icon(color="red", icon="info-sign")
+            icon=folium.Icon(color="green", icon="info-sign")
         ).add_to(shops_map)
 
     map_html = shops_map._repr_html_()
@@ -65,7 +72,7 @@ def index(request):
     context = {
         'recommended_bouquets': [serialize_bouquet(bouquet) for bouquet in recommended_bouquets],
         'shops': [serialize_shop(shop) for shop in shops],
-        'map': map_html  # Добавляем карту в контекст
+        'map': map_html
     }
 
     return render(request, 'index.html', context)
@@ -80,10 +87,7 @@ def catalog(request):
     serialized_bouquets = []
     for bouquet in bouquets:
         flowers_info = [
-            {
-                'title': bf.flower.name,
-                'amount': bf.amount
-            }
+            {'title': bf.flower.name, 'amount': bf.amount}
             for bf in bouquet.bouquetflower_set.all()
         ]
 
@@ -119,6 +123,10 @@ def quiz(request):
 
 def quiz_step(request):
     if request.method == 'POST':
+        if not request.POST.get('occasion'):
+            messages.error(request, 'Пожалуйста, выберите повод для букета')
+            return redirect('quiz')
+
         request.session['occasion_id'] = request.POST.get('occasion')
         return render(request, 'quiz-step.html')
 
@@ -130,11 +138,14 @@ def result(request):
         occasion_id = request.session.get('occasion_id')
         price_range = request.POST.get('price_range', 'any')
 
+        if not occasion_id:
+            messages.error(request, 'Пожалуйста, сначала выберите повод для букета')
+            return redirect('quiz')
+
+        request.session['price_range'] = price_range
+
         bouquets = Bouquet.objects.filter(occasions__id=occasion_id) \
-            .prefetch_related(
-            'bouquetflower_set__flower',
-            'occasions'
-        )
+            .prefetch_related('bouquetflower_set__flower', 'occasions')
 
         if price_range != 'any':
             bouquets = bouquets.filter(budget_category=price_range)
@@ -142,15 +153,13 @@ def result(request):
         bouquet = bouquets.order_by('?').first()
 
         if not bouquet:
+            messages.error(request, 'К сожалению, нет подходящих букетов. Попробуйте другие параметры')
             return redirect('quiz')
 
         request.session['selected_bouquet_id'] = bouquet.id
 
         flowers_info = [
-            {
-                'name': bf.flower.name,
-                'amount': bf.amount
-            }
+            {'name': bf.flower.name, 'amount': bf.amount}
             for bf in bouquet.bouquetflower_set.all()
         ]
 
@@ -179,21 +188,18 @@ def order(request):
     bouquet_id = request.GET.get('bouquet_id')
 
     if from_quiz and bouquet_id:
-        # Если после квиза
         try:
             bouquet = get_object_or_404(Bouquet, id=bouquet_id)
             request.session['selected_bouquet_id'] = bouquet.id
         except (ValueError, Bouquet.DoesNotExist):
             return redirect('catalog')
     elif bouquet_slug:
-        # Если с карточки товара
         try:
             bouquet = get_object_or_404(Bouquet, slug=bouquet_slug)
             request.session['selected_bouquet_id'] = bouquet.id
         except (ValueError, Bouquet.DoesNotExist):
             return redirect('catalog')
     else:
-        # Если нет параметров - проверяем сессию
         bouquet_id = request.session.get('selected_bouquet_id')
         if not bouquet_id:
             return redirect('catalog')
@@ -203,38 +209,64 @@ def order(request):
             return redirect('catalog')
 
     if request.method == 'POST':
-        try:
-            required_fields = ['tel', 'fname', 'adres']
-            if not all(request.POST.get(field) for field in required_fields):
-                return render(request, 'order.html', {
-                    'bouquet': bouquet,
-                    'delivery_times': DELIVERY_TIME_CHOICES,
-                    'form_data': request.POST
-                })
+        fname = request.POST.get('fname', '').strip()
+        tel = request.POST.get('tel', '').strip()
+        address = request.POST.get('adres', '').strip()
 
+        if not fname or len(fname) < 2:
+            messages.error(request, 'Введите корректное имя (минимум 2 символа)')
+            return render(request, 'order.html', {
+                'bouquet': bouquet,
+                'delivery_times': DELIVERY_TIME_CHOICES,
+                'form_data': request.POST
+            })
+
+        if not is_valid_phone(tel):
+            messages.error(
+                request,
+                'Введите корректный номер телефона (11 цифр, начинается с 7 или 8)'
+            )
+            return render(request, 'order.html', {
+                'bouquet': bouquet,
+                'delivery_times': DELIVERY_TIME_CHOICES,
+                'form_data': request.POST
+            })
+
+        if not address or len(address) < 10:
+            messages.error(
+                request,
+                'Введите корректный адрес (минимум 10 символов)'
+            )
+            return render(request, 'order.html', {
+                'bouquet': bouquet,
+                'delivery_times': DELIVERY_TIME_CHOICES,
+                'form_data': request.POST
+            })
+
+        try:
             client, created = Client.objects.get_or_create(
-                phone=request.POST['tel'],
-                defaults={
-                    'name': request.POST['fname'],
-                    'is_consultation': False
-                }
+                phone=tel,
+                defaults={'name': fname, 'is_consultation': False}
             )
 
             if not created:
-                client.name = request.POST['fname']
+                client.name = fname
                 client.save()
 
             Order.objects.create(
                 client=client,
                 bouquet=bouquet,
-                address=request.POST['adres'],
+                address=address,
                 delivery_time=request.POST.get('orderTime', 'ASAP')
             )
 
             return redirect('order_step')
 
         except Exception as e:
-            messages.error(request, f'Ошибка при оформлении заказа: {str(e)}')
+            messages.error(
+                request,
+                f'Ошибка при оформлении заказа: {str(e)}'
+            )
             return render(request, 'order.html', {
                 'bouquet': bouquet,
                 'delivery_times': DELIVERY_TIME_CHOICES,
@@ -248,42 +280,103 @@ def order(request):
 
 
 def order_step(request):
-    if request.method == 'POST':
-        try:
-            card_number = request.POST.get('card_number', '').replace(' ', '')
-            if len(card_number) != 16 or not card_number.isdigit():
-                return redirect('order_step')
-
-            if 'selected_bouquet_id' in request.session:
-                del request.session['selected_bouquet_id']
-            if 'occasion_id' in request.session:
-                del request.session['occasion_id']
-
-            return render(request, 'success_order.html')
-
-        except Exception as e:
-            return redirect('order_step')
-
     if 'selected_bouquet_id' not in request.session:
         return redirect('order')
+
+    if request.method == 'POST':
+        card_number = request.POST.get('card_number', '').replace(' ', '')
+
+        if not is_valid_card(card_number):
+            messages.error(
+                request,
+                'Введите корректный номер карты (16 цифр)'
+            )
+            return render(request, 'order-step.html')
+
+        if 'selected_bouquet_id' in request.session:
+            del request.session['selected_bouquet_id']
+        if 'occasion_id' in request.session:
+            del request.session['occasion_id']
+
+        return render(request, 'success_order.html')
 
     return render(request, 'order-step.html')
 
 
+
 def consultation(request):
     if request.method == 'POST':
-        if not all([request.POST.get('tel'), request.POST.get('fname')]):
-            return render(request, 'consultation.html')
+        fname = request.POST.get('fname', '').strip()
+        tel = request.POST.get('tel', '').strip()
+
+        if not fname or len(fname) < 2:
+            messages.error(
+                request,
+                'Введите корректное имя (минимум 2 символа)'
+            )
+            return render(
+                request,
+                'consultation.html', {
+                'form_data': {'fname': fname, 'tel': tel}
+            })
+
+        if not is_valid_phone(tel):
+            messages.error(
+                request,
+                'Введите корректный номер телефона (11 цифр, начинается с 7 или 8)'
+            )
+            return render(
+                request, 'consultation.html', {
+                'form_data': {'fname': fname, 'tel': tel}
+            })
 
         try:
-            Client.objects.create(
-                name=request.POST['fname'],
-                phone=request.POST['tel'],
-                is_consultation=True
+            client, created = Client.objects.get_or_create(
+                phone=tel,
+                defaults={'name': fname, 'is_consultation': True}
             )
+
+            if not created:
+                client.name = fname
+                client.is_consultation = True
+
+            occasion_id = request.session.get('occasion_id')
+            price_range = request.session.get('price_range')
+
+            if occasion_id and price_range:
+                try:
+                    occasion = Occasion.objects.get(id=occasion_id)
+                    client.quiz_occasion = occasion
+                    client.quiz_price_range = price_range
+
+                    if 'occasion_id' in request.session:
+                        del request.session['occasion_id']
+                    if 'price_range' in request.session:
+                        del request.session['price_range']
+                except Occasion.DoesNotExist:
+                    pass
+
+            client.save()
+
+            try:
+                from .telegram_bot import send_consultation_notification
+                send_consultation_notification(client.id)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Ошибка отправки уведомления в Telegram: {str(e)}")
+
             return redirect('success_consult')
+
         except Exception as e:
-            return render(request, 'consultation.html')
+            messages.error(request, f'Произошла ошибка: {str(e)}')
+            return render(request, 'consultation.html', {
+                'form_data': {'fname': fname, 'tel': tel}
+            })
+
+    from_quiz = request.GET.get('from_quiz') == 'true'
+    if from_quiz:
+        request.session['from_quiz'] = True
 
     return render(request, 'consultation.html')
 
@@ -313,22 +406,8 @@ def card(request, slug):
 
 
 def success_consult(request):
-    if request.method == 'POST':
-        if not all([request.POST.get('tel'), request.POST.get('fname')]):
-            messages.error(request, 'Пожалуйста, заполните все обязательные поля')
-            return render(request, 'consultation.html')
-
-        try:
-            Client.objects.create(
-                name=request.POST['fname'],
-                phone=request.POST['tel'],
-                is_consultation=True
-            )
-            return redirect('success_consult')
-        except Exception as e:
-            return render(request, 'consultation.html')
-
     return render(request, 'success_consult.html')
+
 
 def success_order(request):
     return render(request, 'success_order.html')
