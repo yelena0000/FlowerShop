@@ -34,7 +34,7 @@ def send_delivery_notification(order_id):
     from flowers.models import Order
     order = Order.objects.get(id=order_id)
 
-    bouquet_info = f"💐 Букет: {order.bouquet.name}\n💰 Цена: {order.bouquet.price} руб\n" if order.bouquet else ""
+    bouquet_info = f"💐 *Букет*: {order.bouquet.name}\n💰 *Цена*: {order.bouquet.price} руб\n" if order.bouquet else ""
 
     message = (
         "💐 *Новый заказ!*\n"
