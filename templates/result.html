@@ -64,7 +64,7 @@
                     </div>
 
                 {% if bouquet.photo %}
-                <img src="{{ bouquet.photo.url }}" alt="{{ bouquet.name }}" class="result__block_img" style="margin: 0px 50px 0px 50px">
+                <img src="{{ bouquet.photo.url }}" alt="{{ bouquet.name }}" class="result__block_img" style="margin: 0px 10px 0px 10px">
                 {% else %}
                 <img src="{% static 'img/default_bouquet.jpg' %}" alt="Без фото" class="result__block_img">
                 {% endif %}

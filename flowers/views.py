@@ -27,44 +27,58 @@ def add_shop(map_obj, lat, lon, address):
 
 
 def serialize_bouquet(bouquet):
-    photo_url = bouquet.photo.url if bouquet.photo and hasattr(bouquet.photo, 'url') else None
     return {
-        "title": bouquet.name,
-        "price": bouquet.price,
-        "photo": photo_url,
-        'slug': bouquet.slug
+        'id': bouquet.id,
+        'name': bouquet.name,
+        'slug': bouquet.slug,
+        'price': bouquet.price,
+        'photo': bouquet.photo.url if bouquet.photo else None,
+        'description': bouquet.description,
     }
 
 
 def serialize_shop(shop):
     return {
-        'title': shop.title,
+        'id': shop.id,
         'address': shop.address,
-        'phone_number': shop.phone_number
+        'phone_number': shop.phone_number,
     }
 
 
 def index(request):
+
     recommended_bouquets = Bouquet.objects.filter(is_recommended=True)[:3]
+
     shops = Shop.objects.all()
+
+    shops_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
+
+    for shop in shops:
+        folium.Marker(
+            location=[shop.latitude, shop.longitude],
+            popup=shop.address,
+            icon=folium.Icon(color="red", icon="info-sign")
+        ).add_to(shops_map)
+
+    map_html = shops_map._repr_html_()
+
     context = {
         'recommended_bouquets': [serialize_bouquet(bouquet) for bouquet in recommended_bouquets],
-        'shops': [serialize_shop(shop) for shop in shops]
+        'shops': [serialize_shop(shop) for shop in shops],
+        'map': map_html  # Добавляем карту в контекст
     }
+
     return render(request, 'index.html', context)
 
 
 def catalog(request):
-    # Получаем все букеты с оптимизацией запросов
     bouquets = Bouquet.objects.all().prefetch_related(
         'occasions',
         'bouquetflower_set__flower'
     )
 
-    # Сериализация букетов
     serialized_bouquets = []
     for bouquet in bouquets:
-        # Получаем состав букета
         flowers_info = [
             {
                 'title': bf.flower.name,
@@ -86,7 +100,6 @@ def catalog(request):
             'url': reverse('card', kwargs={'slug': bouquet.slug})
         })
 
-    # Разбиваем на группы по 3 букета
     chunk_bouquets = [
         serialized_bouquets[i:i + 3]
         for i in range(0, len(serialized_bouquets), 3)

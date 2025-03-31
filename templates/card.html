@@ -29,7 +29,7 @@
 		<div class="container">
 			<div class="card ficb">
 				<div class="card__block card__block_first">
-					<img src="/static/img/{{bouquet.photo}}" alt="img" class="card__img">
+					<img src="{{bouquet.photo}}" alt="img" class="card__img">
 				</div>
 				<div class="card__block card__block_sec">
 					<div class="title">{{bouquet.title}}</div>
@@ -45,13 +45,10 @@
 						</div>
 					</div>
 					<div class="card__elems ">
-						<span class="card__elems_intro">Размер</span>
+						<span class="card__elems_intro">Описание</span>
 						<div class="card__items">
 							<span class="card_items_intro">
-								Высота - {{bouquet.height}} см
-							</span>
-							<span class="card_items_intro">
-								Ширина - {{bouquet.width}} см
+								{{ bouquet.description|default:"Этот прекрасный букет создан нашими флористами с любовью и вниманием к деталям. Свежие цветы и гармоничное сочетание оттенков делают его идеальным подарком для любого особого случая." }}
 							</span>
 						</div>
 					</div>
